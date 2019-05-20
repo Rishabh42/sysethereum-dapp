@@ -1,10 +1,11 @@
 
 import React, { Component } from 'react';
-import * as SyscoinRpc from 'syscoin-js';
-import web3 from '../web3';
+import Web3 from 'web3';
 import tpabi from '../SyscoinTransactionProcessor';
 import hsabi from '../HumanStandardToken';  
 import CONFIGURATION from '../config';
+const axios = require('axios');
+const web3 = new Web3(Web3.givenProvider);
 class Step1ES extends Component {
   constructor(props) {
     super(props);
@@ -32,21 +33,34 @@ class Step1ES extends Component {
     this.validationCheck = this.validationCheck.bind(this);
     this.isValidated = this.isValidated.bind(this);
     this.setStateFromReceipt = this.setStateFromReceipt.bind(this);
-    this.syscoinClient = new SyscoinRpc.default({baseUrl: CONFIGURATION.syscoinRpcURL, port: CONFIGURATION.syscoinRpcPort, username: CONFIGURATION.syscoinRpcUser, password: CONFIGURATION.syscoinRpcPassword});
   }
 
   componentDidMount() {
    
   }
   isValidated() {
-    if(this.state.receiptObj === null){
-      return false;
+    const userInput = this._grabUserInput(); // grab user entered vals
+    const validateNewInput = this._validateData(userInput); // run the new input against the validator
+    let isDataValid = false;
+
+    // if full validation passes then save to store and pass as valid
+    if (Object.keys(validateNewInput).every((k) => { return validateNewInput[k] === true })) {
+        if(this.props.getStore().toSysAssetGUID !== userInput.toSysAssetGUID || this.props.getStore().toSysAmount !== userInput.toSysAmount ||
+        this.props.getStore().sysxContract !== userInput.sysxContract || this.props.getStore().sysxFromAccount !== userInput.sysxFromAccount || this.props.getStore().syscoinWitnessAddress !== userInput.syscoinWitnessAddress) { // only update store of something changed
+          this.props.updateStore({
+            ...userInput,
+            savedToCloud: false // use this to notify step4 that some changes took place and prompt the user to save again
+          });  // Update store here (this is just an example, in reality you will do it via redux or flux)
+        }
+
+        isDataValid = true;
     }
-    this.props.updateStore({
-      ...this.state,
-      savedToCloud: false // use this to notify step4 that some changes took place and prompt the user to save again
-    });
-    return true;
+    else {
+        // if anything fails then update the UI validation state but NOT the UI Data State
+        this.setState(Object.assign(userInput, validateNewInput, this._validationErrors(validateNewInput)));
+    }
+
+    return isDataValid;
   }
   componentWillUnmount() {}
   downloadReceipt () {
@@ -122,13 +136,9 @@ class Step1ES extends Component {
     if(receipt.transactionHash && this.state.receiptTxHash !== receipt.transactionHash){
       return;
     }
-    if(receipt.events  && receipt.events[0] && receipt.events[0].raw && receipt.events[0].raw.data){
-      if(receipt.events[0].raw.data.length <= 66){
-        error = this.props.t("step5ErrorCheckLog");
-      }
-    }
-    else{
-      error = this.props.t("step5ErrorCheckLog");
+    if(receipt.status  && receipt.status !== "1" && receipt.status !== true && receipt.status !== "true" && receipt.status !== "0x1"){
+      error = this.props.t("step5ErrorEVMCheckLog");
+      return;
     }
     
     validateNewInput.receiptObj = receipt;
@@ -153,10 +163,15 @@ class Step1ES extends Component {
   }
   async getWitnessProgram(address, validateNewInput){
     if(address.length > 0){
-      const args = [address];
       try {
-        let results = await this.syscoinClient.callRpc("getaddressinfo", args);
-        if(results){
+        let results = await axios.get('http://' + CONFIGURATION.agentURL + ':' + CONFIGURATION.agentPort + '/syscoinrpc?method=getaddressinfo&address=' + address);
+        results = results.data;
+        if(results.error){
+          validateNewInput.buttonVal = false;
+          validateNewInput.buttonValMsg = results.error;
+          return "";
+        }
+        else if(results){
           let version = this.byteToHex(results.witness_version);
           return "0x" + version + results.witness_program;
         }
@@ -172,17 +187,11 @@ class Step1ES extends Component {
     let userInput = this._grabUserInput(); // grab user entered vals
     let validateNewInput = this._validateData(userInput); // run the new input against the validator
     validateNewInput.buttonVal = true;
-    validateNewInput.buttonValMsg = "";
     validateNewInput.sysxContractVal = true;
-    validateNewInput.sysxContractValMsg = "";
     validateNewInput.toSysAssetGUIDVal = true;
-    validateNewInput.toSysAssetGUIDValMsg = "";
     validateNewInput.toSysAmountVal = true;
-    validateNewInput.toSysAmountValMsg = "";
     validateNewInput.syscoinWitnessAddressVal = true;
-    validateNewInput.syscoinWitnessAddressValMsg = "";
     validateNewInput.sysxFromAccountVal = true;
-    validateNewInput.sysxFromAccountValMsg = "";
     let valid = true;
     if(!userInput.sysxContract || userInput.sysxContract === ""){
       validateNewInput.sysxContractVal = false;
@@ -280,7 +289,7 @@ class Step1ES extends Component {
       })
       .on('error', (error, receipt) => {
         thisObj.setState({working: false});
-        if(error.message.length <= 512 && error.message.indexOf("{") != -1){
+        if(error.message.length <= 512 && error.message.indexOf("{") !== -1){
           error = JSON.parse(error.message.substring(error.message.indexOf("{")));
         }
         let message = error.message.toString();
@@ -294,7 +303,6 @@ class Step1ES extends Component {
           thisObj.setState(Object.assign(userInput, validateNewInput, thisObj._validationErrors(validateNewInput)));
         }
       })
-      
   }
 
  

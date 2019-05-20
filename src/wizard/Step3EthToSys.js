@@ -1,7 +1,7 @@
 
 import React, { Component } from 'react';
-import * as SyscoinRpc from 'syscoin-js';
 import CONFIGURATION from '../config';
+const axios = require('axios');
 class Step3ES extends Component {
   constructor(props) {
     super(props);
@@ -16,14 +16,11 @@ class Step3ES extends Component {
     this.getBlockhash = this.getBlockhash.bind(this);
     this.validationCheck = this.validationCheck.bind(this);
     this.isValidated = this.isValidated.bind(this);
-    this.syscoinClient = new SyscoinRpc.default({baseUrl: CONFIGURATION.syscoinRpcURL, port: CONFIGURATION.syscoinRpcPort, username: CONFIGURATION.syscoinRpcUser, password: CONFIGURATION.syscoinRpcPassword});
    
   }
 
   componentDidMount() {
-    if(!this.props.getStore().receiptTxHash){
-      this.props.jumpToStep(0);
-    } else if(!this.props.getStore().mintsysrawtxunsigned){
+    if(!this.props.getStore().mintsysrawtxunsigned){
       this.props.jumpToStep(1);
     }
   }
@@ -69,13 +66,19 @@ class Step3ES extends Component {
     if(valid === true){
       this.setState({working: true});
       let minttxid = userInput.minttxid.toString();
-      const args = [minttxid];
       try {
-        let results = await this.syscoinClient.callRpc("getblockhashbytxid", args);
-        if(results){
+        let results = await axios.get('http://' + CONFIGURATION.agentURL + ':' + CONFIGURATION.agentPort + '/syscoinrpc?method=getblockhashbytxid&txid=' + minttxid);
+        results = results.data;
+        if(results.error){
+          validateNewInput.buttonVal = false;
+          validateNewInput.buttonValMsg = results.error;
+          this.setState({working: false});
+          console.log("error " + results.error);
+        }
+        else if(results && results.hex){
           validateNewInput.mintblockhashVal = true;
-          this.refs.mintblockhash.value = results;
-          userInput.mintblockhash = results;
+          this.refs.mintblockhash.value = results.hex;
+          userInput.mintblockhash = results.hex;
           this.setState({working: false});
         }
       }catch(e) {

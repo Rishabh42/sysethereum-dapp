@@ -1,5 +1,5 @@
-import web3 from './web3';
-const address = '0x6c74ee76f67f775a80140bfb69a576612bdf04b5';
+import CONFIGURATION from './config';
+const address = CONFIGURATION.superblockContract;
 const abi = [
   {
     "constant": true,
@@ -1041,4 +1041,9 @@ const abi = [
     "type": "function"
   }
 ]
-  export default new web3.eth.Contract(abi, address);
+var sbconfig = {
+  data: abi,
+  contract: address
+}
+
+export default sbconfig;

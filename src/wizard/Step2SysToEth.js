@@ -1,7 +1,7 @@
 
 import React, { Component } from 'react';
-import * as SyscoinRpc from 'syscoin-js';
 import CONFIGURATION from '../config';
+const axios = require('axios');
 class Step2 extends Component {
   constructor(props) {
     super(props);
@@ -18,7 +18,6 @@ class Step2 extends Component {
     this.getBurnTx = this.getBurnTx.bind(this);
     this.validationCheck = this.validationCheck.bind(this);
     this.isValidated = this.isValidated.bind(this);
-    this.syscoinClient = new SyscoinRpc.default({baseUrl: CONFIGURATION.syscoinRpcURL, port: CONFIGURATION.syscoinRpcPort, username: CONFIGURATION.syscoinRpcUser, password: CONFIGURATION.syscoinRpcPassword});
    
   }
 
@@ -72,8 +71,9 @@ class Step2 extends Component {
       valid = false;
     }         
     let self = this;
-    this.setState({working: true});
+    
     if(valid === true){
+      this.setState({working: true});
       let fundingAddress = userInput.fundingaddress.toString();
       if(userInput.asset.length > 0 && userInput.asset !== 0 && userInput.asset !== "0"){
         let assetGuid = userInput.asset.toString();
@@ -82,19 +82,25 @@ class Step2 extends Component {
         if(ethAddressStripped && ethAddressStripped.startsWith("0x")){
           ethAddressStripped = ethAddressStripped.substr(2, ethAddressStripped.length);
         }
-        const args = [assetGuid, fundingAddress, userInput.amount.toString(), ethAddressStripped];
         try {
-          let results = await this.syscoinClient.callRpc("assetallocationburn", args);
-          if(results && results.length && results.length > 0){
+          let results = await axios.get('http://' + CONFIGURATION.agentURL + ':' + CONFIGURATION.agentPort + '/syscoinrpc?method=assetallocationburn&asset_guid=' + assetGuid + '&address=' + fundingAddress + '&amount=' + userInput.amount.toString() + '&ethereum_destination_address=' + ethAddressStripped);
+          results = results.data;
+          if(results.error){
+            validateNewInput.buttonVal = false;
+            validateNewInput.buttonValMsg = results.error;
+            self.setState({working: false});      
+          }
+          else if(results && results.hex){
             validateNewInput.sysrawtxunsignedVal = true;
-            this.refs.sysrawtxunsigned.value = results[0];
+            this.refs.sysrawtxunsigned.value = results.hex;
             self.setState({working: false});
+            self.setState(Object.assign(userInput, validateNewInput, this._validationErrors(validateNewInput)));
           }
         }catch(e) {
           validateNewInput.buttonVal = false;
           validateNewInput.buttonValMsg = e.message;
-          console.log("error " + e.message);
           self.setState({working: false});
+          self.setState(Object.assign(userInput, validateNewInput, this._validationErrors(validateNewInput)));
         }
       }
       else{
@@ -102,23 +108,29 @@ class Step2 extends Component {
         if(ethAddressStripped && ethAddressStripped.startsWith("0x")){
           ethAddressStripped = ethAddressStripped.substr(2, ethAddressStripped.length);
         }
-        const args = [fundingAddress, userInput.amount.toString(), true, ethAddressStripped];
         try {
-          let results = await this.syscoinClient.callRpc("syscoinburn", args);
-          if(results && results.length && results.length > 0){
+          let results = await axios.get('http://' + CONFIGURATION.agentURL + ':' + CONFIGURATION.agentPort + '/syscoinrpc?method=syscoinburn&address=' + fundingAddress + '&amount=' + userInput.amount.toString() + '&ethereum_destination_address=' + ethAddressStripped);
+          results = results.data;
+          if(results.error){
+            validateNewInput.buttonVal = false;
+            validateNewInput.buttonValMsg = results.error;
+            self.setState({working: false});      
+          }
+          else if(results && results.hex){
             validateNewInput.sysrawtxunsignedVal = true;
-            this.refs.sysrawtxunsigned.value = results[0];
+            this.refs.sysrawtxunsigned.value = results.hex;
             self.setState({working: false});
+            self.setState(Object.assign(userInput, validateNewInput, this._validationErrors(validateNewInput)));
           }
         
         }catch(e) {
           validateNewInput.buttonVal = false;
           validateNewInput.buttonValMsg = e.message;
           self.setState({working: false});
+          self.setState(Object.assign(userInput, validateNewInput, this._validationErrors(validateNewInput)));
         }
       }
     } 
-    this.setState(Object.assign(userInput, validateNewInput, this._validationErrors(validateNewInput)));
 
   }
   validationCheck() {

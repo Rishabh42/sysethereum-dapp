@@ -1,9 +1,10 @@
 
 import React, { Component } from 'react';
-import SyscoinSuperblocks from '../SyscoinSuperblocks';
+import sbconfig from '../SyscoinSuperblocks';
 import { getProof } from 'bitcoin-proof'
-import web3 from '../web3';
+import Web3 from 'web3';
 import CONFIGURATION from '../config';
+const web3 = new Web3(Web3.givenProvider);
 class Step5 extends Component {
   constructor(props) {
     super(props);
@@ -60,12 +61,24 @@ class Step5 extends Component {
       return;
     }
     if(receipt.events && receipt.events.RelayTransaction && receipt.events.RelayTransaction.returnValues && receipt.events.RelayTransaction.returnValues[0]){
-      if(receipt.events.RelayTransaction.returnValues[0] == 0 || receipt.events.RelayTransaction.returnValues[1] == 0){
-        error = this.props.t("step5ErrorCheckLog");
+      if(receipt.events.RelayTransaction.returnValues[0] === 0 || receipt.events.RelayTransaction.returnValues[1] === 0){
+        error = this.props.t("step5ErrorEVMCheckLog");
+      }
+    }
+    else if(receipt.logs){
+      for(let i = 0;i< receipt.logs.length;i++){
+        if(receipt.logs[i].address.toLowerCase() === CONFIGURATION.superblockContract.toLowerCase()){
+          let topic1 = "0x" + receipt.logs[i].data.substring(2, 66);
+          let topic2 = "0x" + receipt.logs[i].data.substring(66, 130);
+          if(parseInt(topic1) === 0 || parseInt(topic2) === 0){
+            error = this.props.t("step5ErrorEVMCheckLog");
+            break;
+          }
+        }
       }
     }
     else{
-      error = this.props.t("step5ErrorCheckLog");
+      error = this.props.t("step5ErrorEventCheckLog");
     }
     this.setState({
       receiptObj: receipt,
@@ -96,6 +109,11 @@ class Step5 extends Component {
     else if(!CONFIGURATION.testnet && chainId !== 1){
       this.setState({buttonVal: false, buttonValMsg: this.props.t("stepUseMainnet")});
       return;       
+    }
+    let SyscoinSuperblocks = new web3.eth.Contract(sbconfig.data, sbconfig.contract); 
+    if(!SyscoinSuperblocks || !SyscoinSuperblocks.methods || !SyscoinSuperblocks.methods.relayTx){
+      this.setState({buttonVal: false, buttonValMsg: this.props.t("stepSuperblock")});
+      return;  
     }
     this.setState({
       receiptStatus: '',
@@ -142,6 +160,7 @@ class Step5 extends Component {
     this.setState({working: true});
     let thisObj = this;
     thisObj.state.receiptObj = null;
+
      SyscoinSuperblocks.methods.relayTx(_txBytes, this.props.getStore().txindex, merkleProof.sibling, _syscoinBlockHeader, 
       this.props.getStore().syscoinblockindex, _syscoinBlockSiblings, _superblockHash, this.props.getStore().untrustedtargetcontract).send({from: accounts[0], gas: 500000})
       .on('transactionHash', function(hash){
@@ -158,7 +177,7 @@ class Step5 extends Component {
       })
       .on('error', (error, receipt) => {
         thisObj.setState({working: false});
-        if(error.message.length <= 512 && error.message.indexOf("{") != -1){
+        if(error.message.length <= 512 && error.message.indexOf("{") !== -1){
           error = JSON.parse(error.message.substring(error.message.indexOf("{")));
         }
         let message = error.message.toString();

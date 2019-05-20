@@ -9,7 +9,7 @@ Syscoin itself enforces the SPV proof by running Geth in light mode to sync up t
 ## Dependencies
 
 1) You should be running a [Syscoin Agent](https://github.com/syscoin/sysethereum-agents) which is used to get SPV Superblock proofs aswell as query for Superblocks in general. 
-2) You should be running [Syscoin Core](https://github.com/syscoin/syscoin) with `-blockindex` configuration set so that `getblockhashbytxid` can be queried for blocks based on txid needed for the Syscoin to Ethereum wizard. You should also configure the RPC parameters for the dapp to talk to Syscoin Core. This is done via the syscoin.conf file in your Syscoin data directory.
+2) You should be running [Syscoin Core](https://github.com/syscoin/syscoin). You should configure the RPC parameters for the dapp to talk to Syscoin Core. This is done via the syscoin.conf file in your Syscoin data directory.
 3) You should configure `config.js` to point to the Agent and Syscoin core authentication, URL, and ports.
 
 ## Available Scripts
@@ -38,33 +38,6 @@ The build is minified and the filenames include the hashes.<br>
 Your app is ready to be deployed!
 
 See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
-
-
-## Learn More
-
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
-
-To learn React, check out the [React documentation](https://reactjs.org/).
-
-### Code Splitting
-
-This section has moved here: https://facebook.github.io/create-react-app/docs/code-splitting
-
-### Analyzing the Bundle Size
-
-This section has moved here: https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size
-
-### Making a Progressive Web App
-
-This section has moved here: https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app
-
-### Advanced Configuration
-
-This section has moved here: https://facebook.github.io/create-react-app/docs/advanced-configuration
-
-### Deployment
-
-This section has moved here: https://facebook.github.io/create-react-app/docs/deployment
 
 ### `npm run build` fails to minify
 

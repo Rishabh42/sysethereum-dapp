@@ -1,7 +1,8 @@
 
 import React, { Component } from 'react';
 import MaterialIcon from 'material-icons-react';
-import SyscoinSuperblocks from '../SyscoinSuperblocks';
+import web3 from '../web3';
+import sbconfig from '../SyscoinSuperblocks';
 import CONFIGURATION from '../config';
 const axios = require('axios');
 class Step1 extends Component {
@@ -10,6 +11,13 @@ class Step1 extends Component {
     this.searchSuperblock = this.searchSuperblock.bind(this);
     this.handlePrevClick = this.handlePrevClick.bind(this);
     this.handleNextClick = this.handleNextClick.bind(this);
+    this.sbContract = sbconfig.contract;
+    this.sbURL = "https://";
+    if(CONFIGURATION.testnet){
+      this.sbURL += "rinkeby.";
+    }
+    this.sbURL += "etherscan.io/address/" + this.sbContract + "#events";
+    
     this.state = {
       superblockApproved: false,
       superblockBlockHeight: 0,
@@ -27,7 +35,7 @@ class Step1 extends Component {
   handleNextClick() {
     console.log("next");
     console.log( this.state.superblockHeight+1);
-    axios.get('http://' + CONFIGURATION.agentURL + ':' + CONFIGURATION.agentPort + '/superblock?height=' + (this.state.superblockHeight+1), { crossdomain: true })
+    axios.get('http://' + CONFIGURATION.agentURL + ':' + CONFIGURATION.agentPort + '/superblock?height=' + (this.state.superblockHeight+1))
     .then(response => {
       console.log(response);
       if(response.data.error){
@@ -35,7 +43,7 @@ class Step1 extends Component {
       }
       else{
         this.setState({superblockApproved: response.data.approved, superblockBlockHeight: response.data.blockHeight,
-          superblockLastBlockHash: response.data.lastSyscoinBlockHash, superblockLastBlockTime: response.data.previousSyscoinBlockTime,
+          superblockLastBlockHash: response.data.lastSyscoinBlockHash, superblockLastBlockTime: response.data.lastSyscoinBlockTime,
           superblockMerkleRoot: response.data.merkleRoot, superblockParentId: response.data.parentId,
           superblockPreviousBlockBits: response.data.previousSyscoinBlockBits,superblockPreviousBlockTime: response.data.previousSyscoinBlockTime,
           superblockHeight: response.data.superblockHeight, superblockId:  response.data.superblockId
@@ -49,7 +57,7 @@ class Step1 extends Component {
   handlePrevClick() {
     console.log("prev");
     console.log( this.state.superblockHeight-1);
-    axios.get('http://' + CONFIGURATION.agentURL + ':' + CONFIGURATION.agentPort + '/superblock?height=' + (this.state.superblockHeight-1), { crossdomain: true })
+    axios.get('http://' + CONFIGURATION.agentURL + ':' + CONFIGURATION.agentPort + '/superblock?height=' + (this.state.superblockHeight-1))
     .then(response => {
       console.log(response);
       if(response.data.error){
@@ -57,7 +65,7 @@ class Step1 extends Component {
       }
       else{
         this.setState({superblockApproved: response.data.approved, superblockBlockHeight: response.data.blockHeight,
-          superblockLastBlockHash: response.data.lastSyscoinBlockHash, superblockLastBlockTime: response.data.previousSyscoinBlockTime,
+          superblockLastBlockHash: response.data.lastSyscoinBlockHash, superblockLastBlockTime: response.data.lastSyscoinBlockTime,
           superblockMerkleRoot: response.data.merkleRoot, superblockParentId: response.data.parentId,
           superblockPreviousBlockBits: response.data.previousSyscoinBlockBits,superblockPreviousBlockTime: response.data.previousSyscoinBlockTime,
           superblockHeight: response.data.superblockHeight, superblockId:  response.data.superblockId
@@ -73,19 +81,19 @@ class Step1 extends Component {
     const userInput = this.refs.searchText.value;
     if(!userInput || userInput === "")
       return;
-    axios.get('http://' + CONFIGURATION.agentURL + ':' + CONFIGURATION.agentPort + '/superblock?hash=' + userInput, { crossdomain: true })
+    axios.get('http://' + CONFIGURATION.agentURL + ':' + CONFIGURATION.agentPort + '/superblock?hash=' + userInput)
       .then(response => {
         console.log(response);
         if(response.data.error){
-          axios.get('http://' + CONFIGURATION.agentURL + ':' + CONFIGURATION.agentPort + '/superblock?height=' + userInput, { crossdomain: true })
+          axios.get('http://' + CONFIGURATION.agentURL + ':' + CONFIGURATION.agentPort + '/superblock?height=' + userInput)
             .then(response => {
               console.log(response);
               if(response.data.error){
-                axios.get('http://' + CONFIGURATION.agentURL + ':' + CONFIGURATION.agentPort + '/superblockbysyscoinblock?hash=' + userInput, { crossdomain: true })
+                axios.get('http://' + CONFIGURATION.agentURL + ':' + CONFIGURATION.agentPort + '/superblockbysyscoinblock?hash=' + userInput)
                 .then(response => {
                   console.log(response);
                   if(response.data.error){
-                    axios.get('http://' + CONFIGURATION.agentURL + ':' + CONFIGURATION.agentPort + '/superblockbysyscoinblock?height=' + userInput, { crossdomain: true })
+                    axios.get('http://' + CONFIGURATION.agentURL + ':' + CONFIGURATION.agentPort + '/superblockbysyscoinblock?height=' + userInput)
                     .then(response => {
                       console.log(response);
                       if(response.data.error){
@@ -93,7 +101,7 @@ class Step1 extends Component {
                       }
                       else{
                         this.setState({superblockApproved: response.data.approved, superblockBlockHeight: response.data.blockHeight,
-                          superblockLastBlockHash: response.data.lastSyscoinBlockHash, superblockLastBlockTime: response.data.previousSyscoinBlockTime,
+                          superblockLastBlockHash: response.data.lastSyscoinBlockHash, superblockLastBlockTime: response.data.lastSyscoinBlockTime,
                           superblockMerkleRoot: response.data.merkleRoot, superblockParentId: response.data.parentId,
                           superblockPreviousBlockBits: response.data.previousSyscoinBlockBits,superblockPreviousBlockTime: response.data.previousSyscoinBlockTime,
                           superblockHeight: response.data.superblockHeight, superblockId:  response.data.superblockId
@@ -106,7 +114,7 @@ class Step1 extends Component {
                   }
                   else{
                     this.setState({superblockApproved: response.data.approved, superblockBlockHeight: response.data.blockHeight,
-                      superblockLastBlockHash: response.data.lastSyscoinBlockHash, superblockLastBlockTime: response.data.previousSyscoinBlockTime,
+                      superblockLastBlockHash: response.data.lastSyscoinBlockHash, superblockLastBlockTime: response.data.lastSyscoinBlockTime,
                       superblockMerkleRoot: response.data.merkleRoot, superblockParentId: response.data.parentId,
                       superblockPreviousBlockBits: response.data.previousSyscoinBlockBits,superblockPreviousBlockTime: response.data.previousSyscoinBlockTime,
                       superblockHeight: response.data.superblockHeight, superblockId:  response.data.superblockId
@@ -119,7 +127,7 @@ class Step1 extends Component {
               }
               else{
                 this.setState({superblockApproved: response.data.approved, superblockBlockHeight: response.data.blockHeight,
-                  superblockLastBlockHash: response.data.lastSyscoinBlockHash, superblockLastBlockTime: response.data.previousSyscoinBlockTime,
+                  superblockLastBlockHash: response.data.lastSyscoinBlockHash, superblockLastBlockTime: response.data.lastSyscoinBlockTime,
                   superblockMerkleRoot: response.data.merkleRoot, superblockParentId: response.data.parentId,
                   superblockPreviousBlockBits: response.data.previousSyscoinBlockBits,superblockPreviousBlockTime: response.data.previousSyscoinBlockTime,
                   superblockHeight: response.data.superblockHeight, superblockId:  response.data.superblockId
@@ -132,7 +140,7 @@ class Step1 extends Component {
         }
         else{
           this.setState({superblockApproved: response.data.approved, superblockBlockHeight: response.data.blockHeight,
-            superblockLastBlockHash: response.data.lastSyscoinBlockHash, superblockLastBlockTime: response.data.previousSyscoinBlockTime,
+            superblockLastBlockHash: response.data.lastSyscoinBlockHash, superblockLastBlockTime: response.data.lastSyscoinBlockTime,
             superblockMerkleRoot: response.data.merkleRoot, superblockParentId: response.data.parentId,
             superblockPreviousBlockBits: response.data.previousSyscoinBlockBits,superblockPreviousBlockTime: response.data.previousSyscoinBlockTime,
             superblockHeight: response.data.superblockHeight, superblockId:  response.data.superblockId
@@ -144,15 +152,20 @@ class Step1 extends Component {
       });
   }
     async componentDidMount() {
-    const currentSuperBlockHash = await SyscoinSuperblocks.methods.getBestSuperblock().call();
-    axios.get('http://' + CONFIGURATION.agentURL + ':' + CONFIGURATION.agentPort + '/superblock?hash=' + currentSuperBlockHash, { crossdomain: true })
+      let SyscoinSuperblocks = new web3.eth.Contract(sbconfig.data, sbconfig.contract); 
+      if(!SyscoinSuperblocks || !SyscoinSuperblocks.methods || !SyscoinSuperblocks.methods.getBestSuperblock){
+        this.setState({searchError: this.props.t("stepSuperblock")});
+        return;  
+      }
+      const currentSuperBlockHash = await SyscoinSuperblocks.methods.getBestSuperblock().call();
+      axios.get('http://' + CONFIGURATION.agentURL + ':' + CONFIGURATION.agentPort + '/superblock?hash=' + currentSuperBlockHash)
       .then(response => {
         if(response.data.error){
           this.setState({searchError: response.error});
         }
         else{
           this.setState({superblockApproved: response.data.approved, superblockBlockHeight: response.data.blockHeight,
-            superblockLastBlockHash: response.data.lastSyscoinBlockHash, superblockLastBlockTime: response.data.previousSyscoinBlockTime,
+            superblockLastBlockHash: response.data.lastSyscoinBlockHash, superblockLastBlockTime: response.data.lastSyscoinBlockTime,
             superblockMerkleRoot: response.data.merkleRoot, superblockParentId: response.data.parentId,
             superblockPreviousBlockBits: response.data.previousSyscoinBlockBits,superblockPreviousBlockTime: response.data.previousSyscoinBlockTime,
             superblockHeight: response.data.superblockHeight, superblockId:  response.data.superblockId
@@ -205,9 +218,10 @@ class Step1 extends Component {
                     <code>
                         {this.props.t("step1SuperblockId")}: {this.state.superblockId}<br />
                         {this.props.t("step1SuperblockBlockHeight")}: {this.state.superblockBlockHeight}<br />
-                        {this.props.t("step1superblockHeight")}: {this.state.superblockHeight}<br />
+                        {this.props.t("step1SuperblockHeight")}: {this.state.superblockHeight}<br />
                         {this.props.t("step1LastBlockTime")}: {this.state.superblockLastBlockTime}<br />
                         {this.props.t("step1SuperblockApproved")}: {this.state.superblockApproved.toString()}<br />
+                        {this.props.t("step1SuperblockAddress")}: <a href={this.sbURL} target="_blank" rel="noopener noreferrer">{this.sbContract}</a><br />
                     </code>
                   </div>
                   <div className="col-md-6">
